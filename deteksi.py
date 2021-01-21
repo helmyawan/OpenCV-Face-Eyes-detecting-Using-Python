@@ -1,27 +1,44 @@
 import cv2
-import argparse
-import numpy as np  
+import numpy as np
 
-faceDetect = cv2.CascadeClassifier('haarcascade_frontalface_default.xml'); #Definisi Variabel Face detek
-eyesDetect = cv2.CascadeClassifier('haarcascade_eye.xml'); #Definisi variabel eyes detek
-camera = cv2.VideoCapture(0);
+face_cascade = cv2.CascadeClassifier("frontalface_default.xml")
 
-while (True):
-    ret,img =camera.read(); #Berfungsi sebagai camera agar bisa menangkap object yang di tangkap
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY) #Untuk mengganti frame pada webcam
-    faces = faceDetect.detectMultiScale(gray,1.3,5); 
+eye_cascade = cv2.CascadeClassifier("eye.xml")
+
+smile_cascade = cv2.CascadeClassifier("smile.xml")
+
+cap = cv2.VideoCapture(0)
+
+while True:
+
+    ret, img = cap.read()
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+
     for (x,y,w,h) in faces:
-        cv2.rectangle(img,(x,y), (x+w,y+h),(0,255,0),2) #Membuat kotak dan membuat warna hijau pada object yang di deteksi
-        cv2.imshow("Face",img);
-        if(cv2.waitKey(1) ==ord('q')):
-            ret,img =camera.read(); #Berfungsi sebagai camera agar bisa menangkap object yang di tangkap
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY) #Untuk mengganti frame pada webcam
-    faces = eyesDetect.detectMultiScale(gray,1.3,5);
-    for (x,y,w,h) in faces:
-        cv2.rectangle(img,(x,y), (x+w,y+h),(0,255,0),2) #Membuat kotak dan membuat warna hijau pada object yang di deteksi
-        cv2.imshow("Face",img);
-        if(cv2.waitKey(1) ==ord('q')):
-            break;
-                                      
-camera.release()
-cv2.destroyAllwindows()
+        cv2.rectangle(img, (x,y), (x+w, y+h), (255,0,0), 2)
+
+        roi_gray = gray[y:y+h, x:x+w]
+        roi_color = img[y:y+h, x:x+w]
+
+        eyes = eye_cascade.detectMultiScale(roi_gray)
+
+        smile = smile_cascade.detectMultiScale(roi_gray,
+                                               scaleFactor=1.7,
+                                               minNeighbors=22,
+                                               minSize=(25, 25),
+                                               )
+
+        for (ex, ey, ew, eh) in eyes:
+            cv2.rectangle(roi_color, (ex,ey), (ex+ew, ey+eh), (0,255,0), 2)
+
+        for (ex, ey, ew, eh) in smile:
+            cv2.rectangle(roi_color, (ex,ey), (ex+ew, ey+eh), (0,255,255), 2)
+
+    cv2.imshow('img', img)
+    k = cv2.waitKey(30) & 0xff
+    if k == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
